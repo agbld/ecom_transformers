@@ -12,7 +12,8 @@ from ruten_utils.RutenItemNamesDataset import RutenItemNamesDataset
 
 #%%
 # Set arguments
-PRETRAIN_MODEL_PATH = "F:/Models/ICL/pretrained_models/ecom-bert"
+DB_PATH='/home/ee303/Documents/agbld/Datasets/ruten.db'
+PRETRAIN_MODEL_PATH = "/home/ee303/Documents/agbld/Models/pretrained_models/ckiplab-bert-base-chinese"
 OUTPUT_MODEL_NAME = "EComBERT_ruten_adaption_fp16O1"
 
 #%%
@@ -39,43 +40,43 @@ model = AutoModelForMaskedLM.from_pretrained(PRETRAIN_MODEL_PATH)
 
 #%%
 # Initialize PChome+MOMO dataset
-class CustomDataset(Dataset):
-    def __init__(self, tokenizer):
-        with open("F:/Datasets/PChome/title_desc_corpus_chinese.txt", 'r') as f:
-            self.source = list(f)
-        self.tokenizer = tokenizer
+# class CustomDataset(Dataset):
+#     def __init__(self, tokenizer):
+#         with open("F:/Datasets/PChome/title_desc_corpus_chinese.txt", 'r') as f:
+#             self.source = list(f)
+#         self.tokenizer = tokenizer
 
-    def __len__(self):
-        return len(self.source)
+#     def __len__(self):
+#         return len(self.source)
 
-    def __getitem__(self, idx):
-        #encoded = self.tokenizer(self.source['train']['text'][idx], return_tensors = 'pt')
-        text = self.source[idx].replace('\n','')
-        # encoded = self.tokenizer(text = text, truncation= True)#, max_length = 128)
-        # return encoded
-        return text
+#     def __getitem__(self, idx):
+#         #encoded = self.tokenizer(self.source['train']['text'][idx], return_tensors = 'pt')
+#         text = self.source[idx].replace('\n','')
+#         # encoded = self.tokenizer(text = text, truncation= True)#, max_length = 128)
+#         # return encoded
+#         return text
     
-dataset = CustomDataset(tokenizer)
+# dataset = CustomDataset(tokenizer)
 
 #%%
-sum_txt_len = 0
-max_txt_len = 0
-inspect_len = 100000
-from tqdm import tqdm
-with tqdm(total=inspect_len) as pbar:
-    for i in range(inspect_len):
-        random_idx = random.randint(0, len(dataset)-1)
+# sum_txt_len = 0
+# max_txt_len = 0
+# inspect_len = 100000
+# from tqdm import tqdm
+# with tqdm(total=inspect_len) as pbar:
+#     for i in range(inspect_len):
+#         random_idx = random.randint(0, len(dataset)-1)
         
-        sum_txt_len += len(dataset[random_idx]['input_ids'])
-        if len(dataset[random_idx]['input_ids']) > max_txt_len:
-            max_txt_len = len(dataset[random_idx]['input_ids'])
-        # pbar.set_description(f"Processing {random_idx}")
-        pbar.set_postfix({'avg_txt_len': sum_txt_len / (i + 1), 'max_txt_len': max_txt_len})
-        pbar.update(1)
+#         sum_txt_len += len(dataset[random_idx]['input_ids'])
+#         if len(dataset[random_idx]['input_ids']) > max_txt_len:
+#             max_txt_len = len(dataset[random_idx]['input_ids'])
+#         # pbar.set_description(f"Processing {random_idx}")
+#         pbar.set_postfix({'avg_txt_len': sum_txt_len / (i + 1), 'max_txt_len': max_txt_len})
+#         pbar.update(1)
     
 #%%
 # Initialize Ruten dataset
-corpus_dataset = RutenItemNamesDataset(db_path='F:/Database/SQLite/ruten_G_NAMEs.db',
+corpus_dataset = RutenItemNamesDataset(db_path=DB_PATH,
                                 table_name='ruten_items',
                                 col_item_name='G_NAME',
                                 create_db=False,    # set to True to re-create the database
@@ -126,13 +127,13 @@ training_args = TrainingArguments(
     output_dir=f"./Experiments/{OUTPUT_MODEL_NAME}",
     overwrite_output_dir=True,
     num_train_epochs=10,
-    per_device_train_batch_size= 64, # 64, maxlength = 128 at 15GB
+    per_device_train_batch_size=128, # 64, maxlength = 128 at 15GB
     save_steps=100000,
     save_total_limit=40,
     seed=2022,
     data_seed=2022,
     report_to="wandb",
-    logging_steps=50,
+    logging_steps=500,
     fp16=True,
     fp16_opt_level="O1",
     #resume_from_checkpoint = './RoBERTa_retrained/checkpoint-510000'
